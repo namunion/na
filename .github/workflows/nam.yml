@@ -1,0 +1,53 @@
+name: Linux Binary Build with Cache + 8 Cores
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Install build dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev pkg-config cmake
+
+      # 3. Cache build dependencies (optional)
+      #    Nếu dùng các thư viện cài đặt qua package manager hoặc download
+      - name: Cache build directory
+        uses: actions/cache@v3
+        with:
+          path: build/
+          key: build-${{ runner.os }}-${{ hashFiles('**/Makefile') }}
+          restore-keys: |
+            build-${{ runner.os }}-
+
+      # 4. Show CPU info
+      - name: Show CPU info
+        run: |
+          echo "CPU Info:"
+          lscpu
+          echo "Logical cores: $(nproc)"
+
+      # 5. Build project using 8 cores
+      - name: Build with Make
+        run: |
+          make -j8
+
+      # 6. Upload build artifacts
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-binaries
+          path: |
+            bin/
+            build/
